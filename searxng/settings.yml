@@ -1,0 +1,27 @@
+use_default_settings: true
+
+server:
+  bind_address: "0.0.0.0"
+  port: 8080
+  secret_key: "truthengine-local-dev-change-before-production"
+  limiter: false
+  image_proxy: false
+
+search:
+  formats:
+    - html
+    - json
+
+engines:
+  - name: google
+    engine: google
+    active: false  # Disable Google by default as it frequently blocks local docker instances with CAPTCHAs
+  - name: duckduckgo
+    engine: duckduckgo
+    active: true   # Extremely stable, doesn't CAPTCHA block
+  - name: brave
+    engine: brave
+    active: true   # Stable developer/general results
+  - name: wikipedia
+    engine: wikipedia
+    active: true   # High reliability for factual claims
