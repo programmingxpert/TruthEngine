@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "truthengine"
 version = "0.1.0"
-description = "Production backend foundation for TruthEngine."
+description = "A transparent AI reasoning engine that compiles, crawls, and structures factual assertions into a versioned evidence graph."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
