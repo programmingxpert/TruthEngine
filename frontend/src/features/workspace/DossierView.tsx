@@ -171,10 +171,129 @@ export function DossierView({
         </ul>
       </section>
 
+      <section className="space-y-4 border-t border-border pt-6">
+        <div className="flex items-center space-x-2 text-xs font-mono text-slate-400">
+          <BookOpen className="w-4 h-4 text-indigo-400" />
+          <span className="uppercase font-semibold tracking-wider text-slate-300">5. Source Provenance & Citations</span>
+        </div>
+        <div className="pl-6 space-y-4">
+          {(() => {
+            // Group evidence by publisher to find cited sources
+            const citedSourcesMap = new Map<string, {
+              publisher: string;
+              title: string;
+              url: string;
+              count: number;
+              category: string;
+            }>();
+
+            (graph?.evidence_items || []).forEach((item) => {
+              const existing = citedSourcesMap.get(item.publisher);
+              if (existing) {
+                existing.count += 1;
+              } else {
+                citedSourcesMap.set(item.publisher, {
+                  publisher: item.publisher,
+                  title: item.title,
+                  url: item.url,
+                  count: 1,
+                  category: item.source_category || "GENERAL",
+                });
+              }
+            });
+
+            const citedSources = Array.from(citedSourcesMap.values());
+            const ingestedSources = events
+              .filter((evt) => evt.event_type === "SOURCE_INGESTED")
+              .map((evt) => ({
+                domain: evt.metadata?.domain || evt.metadata?.publisher || "unknown",
+                url: evt.metadata?.url || "",
+                title: evt.metadata?.title || evt.message || "unknown",
+              }));
+
+            return (
+              <div className="space-y-6">
+                {citedSources.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic">No citations mapped from ingested sources yet. Claims are still being verified.</p>
+                ) : (
+                  <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/20">
+                    <table className="w-full text-left border-collapse text-xs font-sans">
+                      <thead>
+                        <tr className="border-b border-slate-800 bg-slate-950/60 font-mono text-[10px] text-slate-500 uppercase tracking-wider">
+                          <th className="p-3">Source / Institution</th>
+                          <th className="p-3">Category</th>
+                          <th className="p-3 text-center">Citations Used</th>
+                          <th className="p-3">Resource Location</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/40">
+                        {citedSources.map((src, idx) => (
+                          <tr key={`${src.publisher}-${idx}`} className="hover:bg-slate-900/20 transition-colors">
+                            <td className="p-3 font-medium text-slate-200">
+                              <div className="flex flex-col space-y-0.5 max-w-md">
+                                <span className="font-mono text-xs text-slate-200 font-semibold">{src.publisher}</span>
+                                <span className="text-[10px] text-slate-400 truncate">{src.title}</span>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-slate-900 border border-slate-800 text-slate-400">
+                                {src.category}
+                              </span>
+                            </td>
+                            <td className="p-3 text-center text-indigo-400 font-mono font-bold text-xs">
+                              {src.count} quote(s)
+                            </td>
+                            <td className="p-3 max-w-xs truncate font-mono text-[10px] text-slate-500 hover:text-indigo-400">
+                              <a href={src.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                {src.url}
+                              </a>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {ingestedSources.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="font-mono text-[10px] text-slate-500 uppercase tracking-wider">
+                      Scanned Bibliography ({ingestedSources.length} sources crawled)
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {ingestedSources.map((src, idx) => {
+                        const isCited = citedSources.some((c) => c.publisher === src.domain);
+                        return (
+                          <div key={`${src.domain}-${idx}`} className="p-3 rounded-lg border border-slate-800/80 bg-slate-900/20 flex items-start justify-between gap-3 text-xs leading-relaxed hover:border-slate-700/80 transition-colors">
+                            <div className="space-y-1 truncate">
+                              <p className="font-semibold text-slate-300 truncate">{src.title}</p>
+                              <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-slate-500 hover:text-indigo-400 hover:underline block truncate">
+                                {src.url}
+                              </a>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded text-[8px] font-mono font-bold tracking-wider shrink-0 uppercase border ${
+                              isCited 
+                                ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" 
+                                : "bg-slate-950 text-slate-500 border-slate-800"
+                            }`}>
+                              {isCited ? "Cited" : "Scanned"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
       <section className="space-y-3 border-t border-border pt-6">
         <div className="flex items-center space-x-2 text-xs font-mono text-slate-500">
           <GitPullRequest className="w-4 h-4" />
-          <span className="uppercase">5. Integrity Audit Log</span>
+          <span className="uppercase font-semibold tracking-wider">6. Integrity Audit Log</span>
         </div>
         <div className="pl-6 font-mono text-[10px] text-slate-500 space-y-1">
           {events.slice(-5).map((evt) => (

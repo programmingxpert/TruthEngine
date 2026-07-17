@@ -48,12 +48,19 @@ export function VerdictSummary({ investigation, plan, graph, events, onInspect }
   // -------------------------------------------------------------
   // Live Pipeline Stage calculation
   // -------------------------------------------------------------
-  const hasPlan = events.some((e) => e.event_type === "PLAN_GENERATED");
+  const hasPlan = !!plan || events.some((e) => e.event_type === "PLAN_GENERATED");
   const hasSearch = events.some((e) => e.event_type === "SEARCH_COMPLETED");
   const hasIngest = events.some((e) => e.event_type === "INGESTION_COMPLETED");
   const hasPassages = events.some((e) => e.event_type === "PASSAGES_SELECTED");
   const hasAnalysis = events.some((e) => e.event_type === "ANALYSIS_COMPLETED");
   const hasVerdict = events.some((e) => e.event_type === "VERDICT_GENERATED");
+
+  // Calculate source count from ingested events
+  const ingestedEvents = events.filter((evt) => evt.event_type === "SOURCE_INGESTED");
+  const sourceCount = ingestedEvents.length;
+  const ingestedDomains = ingestedEvents
+    .map((e) => e.metadata?.domain || e.metadata?.publisher || "unknown")
+    .filter((d, i, arr) => arr.indexOf(d) === i);
 
   const steps = [
     {
@@ -80,7 +87,9 @@ export function VerdictSummary({ investigation, plan, graph, events, onInspect }
       desc: "Fetch & scrape discovered pages",
       icon: Database,
       status: hasIngest ? "completed" : isRunning && hasSearch && !hasIngest ? "active" : "pending",
-      detail: sourceCount > 0 ? `Ingested ${sourceCount} domains` : "Searching...",
+      detail: sourceCount > 0 
+        ? `Ingested ${sourceCount} domains: ${ingestedDomains.join(", ")}` 
+        : "Searching...",
     },
     {
       id: "passages",
